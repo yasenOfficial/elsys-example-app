@@ -44,33 +44,48 @@ jobs:
           sleep 5
           locust -f locustfile.py --headless -u 10 -r 5 -t 30s --host http://127.0.0.1:8000
 
-  deploy:
-    name: Main Branch CD
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+deploy:
+  name: Main Branch CD
+  runs-on: ubuntu-latest
+  if: github.ref == 'refs/heads/main'
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
-      - name: Build Docker image
-        run: |
-          docker build -t filestorage:latest .
-          docker tag filestorage:latest filestorage:${GITHUB_SHA}
+    - name: Build Docker image
+      run: |
+        docker build -t filestorage:latest .
+        docker tag filestorage:latest filestorage:${GITHUB_SHA}
 
-      - name: Log in to GHCR
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+    - name: Log in to GHCR
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push Docker image to GHCR
-        run: |
-          docker tag filestorage:latest ghcr.io/yasenofficial/filestorage:latest
-          docker push ghcr.io/yasenofficial/filestorage:latest
-          docker tag filestorage:latest ghcr.io/yasenofficial/filestorage:${GITHUB_SHA::7}
-          docker push ghcr.io/yasenofficial/filestorage:${GITHUB_SHA::7}
+    - name: Push Docker image to GHCR
+      run: |
+        docker tag filestorage:latest ghcr.io/yasenofficial/filestorage:latest
+        docker push ghcr.io/yasenofficial/filestorage:latest
+        docker tag filestorage:latest ghcr.io/yasenofficial/filestorage:${GITHUB_SHA::7}
+        docker push ghcr.io/yasenofficial/filestorage:${GITHUB_SHA::7}
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: actions/create-release@v1
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Release ${{ github.run_number }}
+        body: |
+          Docker images pushed to GHCR:
+          - ghcr.io/yasenofficial/filestorage:latest
+          - ghcr.io/yasenofficial/filestorage:${GITHUB_SHA::7}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
