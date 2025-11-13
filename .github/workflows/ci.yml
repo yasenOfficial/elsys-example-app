@@ -56,18 +56,20 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Log in to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
       - name: Build Docker image
         run: |
-          docker build -t myusername/filestorage:latest .
-          docker tag myusername/filestorage:latest myusername/filestorage:${GITHUB_SHA}
+          docker build -t filestorage:latest .
+          docker tag filestorage:latest filestorage:${GITHUB_SHA}
 
-      - name: Push Docker image
+      - name: Log in to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push Docker image to GHCR
         run: |
-          docker push myusername/filestorage:latest
-          docker push myusername/filestorage:${GITHUB_SHA}
+          docker tag filestorage:latest ghcr.io/${{ github.repository_owner }}/filestorage:latest
+          docker push ghcr.io/${{ github.repository_owner }}/filestorage:latest
+          docker push ghcr.io/${{ github.repository_owner }}/filestorage:${GITHUB_SHA}
