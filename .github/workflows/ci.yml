@@ -1,0 +1,73 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+    branches:
+      - "**"
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Pull Request CI
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
+
+      - name: Install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: |
+          source venv/bin/activate
+          pytest -v tests/
+
+      - name: Run short Locust load test
+        run: |
+          source venv/bin/activate
+          # Запускаме FastAPI в background
+          uvicorn main:app --host 0.0.0.0 --port 8000 &
+          # Изчакваме малко докато сървъра стартира
+          sleep 5
+          locust -f locustfile.py --headless -u 10 -r 5 -t 30s --host http://127.0.0.1:8000
+
+  deploy:
+    name: Main Branch CD
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t myusername/filestorage:latest .
+          docker tag myusername/filestorage:latest myusername/filestorage:${GITHUB_SHA}
+
+      - name: Push Docker image
+        run: |
+          docker push myusername/filestorage:latest
+          docker push myusername/filestorage:${GITHUB_SHA}
