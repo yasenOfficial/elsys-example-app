@@ -72,4 +72,5 @@ jobs:
         run: |
           docker tag filestorage:latest ghcr.io/yasenofficial/filestorage:latest
           docker push ghcr.io/yasenofficial/filestorage:latest
-          docker push ghcr.io/yasenofficial/filestorage:${GITHUB_SHA}
+          docker tag filestorage:latest ghcr.io/yasenofficial/filestorage:${GITHUB_SHA::7}
+          docker push ghcr.io/yasenofficial/filestorage:${GITHUB_SHA::7}
