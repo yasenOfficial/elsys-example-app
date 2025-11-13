@@ -70,6 +70,6 @@ jobs:
 
       - name: Push Docker image to GHCR
         run: |
-          docker tag filestorage:latest ghcr.io/${{ github.repository_owner }}/filestorage:latest
-          docker push ghcr.io/${{ github.repository_owner }}/filestorage:latest
-          docker push ghcr.io/${{ github.repository_owner }}/filestorage:${GITHUB_SHA}
+          docker tag filestorage:latest ghcr.io/yasenofficial/filestorage:latest
+          docker push ghcr.io/yasenofficial/filestorage:latest
+          docker push ghcr.io/yasenofficial/filestorage:${GITHUB_SHA}
